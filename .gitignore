@@ -1,12 +1,24 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
 node_modules/
-build/
+
+# ── Build output ──────────────────────────────────────────────────────────────
 dist/
+build/
 coverage/
-.DS_Store
-*.log
-.env*
+
+# ── Environment / Secrets ─────────────────────────────────────────────────────
+# Ignore all .env variants (.env, .env.local, .env.production, etc.)
+# but keep the example template so new contributors know what's needed.
+.env
+.env.*
 !.env.example
 
-# Large AI model binaries — never commit to GitHub
+# ── Large AI model binaries ───────────────────────────────────────────────────
+# gemma-2b-it-gpu-int4.bin is ~1.3 GB — never push to GitHub.
+# Drop model files into public/models/ locally; they stay off the remote.
 public/models/
 *.bin
+
+# ── OS / Editor noise ─────────────────────────────────────────────────────────
+.DS_Store
+*.log
