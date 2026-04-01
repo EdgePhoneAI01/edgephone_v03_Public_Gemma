@@ -1,6 +1,4 @@
 <div align="center">
-  <img width="1200" height="475" alt="EdgePhone.AI Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-
   <h1>EdgePhone.AI</h1>
 
   <p>
@@ -85,7 +83,7 @@ Before you begin, make sure you have the following installed:
 - **[Node.js](https://nodejs.org/)** v18 or higher
 - **npm** v9 or higher (bundled with Node.js)
 - A modern browser with **WebGPU support** (Chrome 113+, Edge 113+) for local AI mode
-- A **[Google AI Studio API key](https://aistudio.google.com/app/apikey)** for cloud/hybrid mode *(optional)*
+- A **Gemini API key** for cloud/hybrid mode *(optional)*
 
 ---
 
@@ -175,7 +173,7 @@ Create a `.env` file in the project root (or copy `.env.example`):
 
 ```env
 # Required for Gemini AI cloud mode
-VITE_GEMINI_API_KEY="your_google_ai_studio_api_key"
+VITE_GEMINI_API_KEY="your_gemini_api_key"
 
 # The URL where this app is hosted (used for self-referential links & OAuth)
 APP_URL="http://localhost:3000"
@@ -183,7 +181,7 @@ APP_URL="http://localhost:3000"
 
 | Variable | Required | Description |
 |---|---|---|
-| `VITE_GEMINI_API_KEY` | For cloud mode | Your Google AI Studio API key |
+| `VITE_GEMINI_API_KEY` | For cloud mode | Your Gemini API key |
 | `APP_URL` | For deployment | Public URL of the hosted app |
 
 > **Security:** Never commit your `.env` file. It is already listed in `.gitignore`.
