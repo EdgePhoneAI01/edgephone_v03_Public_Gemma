@@ -1,0 +1,23 @@
+# .gcloudignore — controls what gcloud uploads to Cloud Build
+# This overrides .gitignore for Cloud Build submissions.
+
+# Exclude heavy build-time dependencies
+node_modules/
+
+# Exclude local env files (secrets managed via Secret Manager)
+.env
+.env.local
+.env.*.local
+
+# Exclude git metadata
+.git/
+.github/
+
+# Exclude dev logs and OS files
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# NOTE: dist/ is intentionally NOT excluded here.
+# It is included so the nginx-only Dockerfile can COPY dist/ into the image.

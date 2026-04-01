@@ -1,0 +1,106 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-edge-bg: #1F2041;
+  --color-edge-primary: #6A00F4;
+  --color-edge-secondary: #00E5FF;
+  --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    /* Remove the 300ms tap delay on all interactive elements */
+    touch-action: manipulation;
+    /* Kill the blue tap flash on iOS / Android */
+    -webkit-tap-highlight-color: transparent;
+    /* Prevent text-selection on UI chrome */
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Re-enable text selection for readable content */
+  p, span, h1, h2, h3, h4, h5, h6, li, td, th, blockquote {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  html {
+    /* Prevent iOS from auto-adjusting font sizes in landscape */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-edge-bg text-white font-sans antialiased;
+    /* Kill pull-to-refresh bounce on the body itself */
+    overscroll-behavior: none;
+    /* Smooth momentum scrolling inside any overflow containers */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent iOS Safari from zooming when focusing inputs — must be ≥ 16px */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+    /* Re-enable text interaction for inputs */
+    -webkit-user-select: text;
+    user-select: text;
+    touch-action: manipulation;
+  }
+
+  /* Remove iOS inner shadow / outline on inputs */
+  input,
+  textarea {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+@layer utilities {
+  /* Hide scrollbars everywhere */
+  .no-scrollbar::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    background: transparent;
+  }
+  .no-scrollbar,
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Safe-area padding helpers for notched / Dynamic-Island phones */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Momentum scrolling utility */
+  .scroll-touch {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
