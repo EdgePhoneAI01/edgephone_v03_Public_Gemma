@@ -18,6 +18,24 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- COI Service Worker — must load BEFORE the main module.
+         Injects COOP/COEP headers on GitHub Pages (no custom-header support).
+         Required for WebGPU + MediaPipe LLM WASM (SharedArrayBuffer). -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        // Register synchronously so isolation is active before any module fetch.
+        navigator.serviceWorker.register('/coi-serviceworker.js', { scope: '/' })
+          .then(reg => {
+            // If a new SW was installed, reload once so isolation takes effect.
+            if (reg.installing || reg.waiting) {
+              navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+              });
+            }
+          })
+          .catch(err => console.warn('[COI-SW] Registration failed:', err));
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

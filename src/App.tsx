@@ -44,6 +44,16 @@ import {
   Eye,
 } from 'lucide-react';
 
+// ─── Model URL ────────────────────────────────────────────────────────────────
+// Priority 1: VITE_MODEL_URL env var
+// Priority 2: Remote Kaggle URL fallback
+const MODEL_URL: string =
+  (import.meta as any).env?.VITE_MODEL_URL ||
+  'https://www.kaggle.com/models/google/gemma/tfLite/gemma-2b-it-gpu-int4';
+
+const MODEL_IS_REMOTE = MODEL_URL.startsWith('http');
+const MODEL_LABEL = MODEL_IS_REMOTE ? 'Remote Kaggle URL' : 'Local /public/models/';
+
 // ─── Reusable Components ────────────────────────────────────────────────────
 
 const Toggle = ({ active, onToggle }: { active: boolean; onToggle?: () => void }) => (
@@ -535,6 +545,7 @@ const AssistantTab = ({ isOnline, setIsOnline, messages, setMessages }: { isOnli
     const initModel = async () => {
       setIsModelLoading(true);
       setModelError('');
+      console.log(`[EdgeAI] Loading model from: ${MODEL_URL} (${MODEL_LABEL})`);
       try {
         const genai = await FilesetResolver.forGenAiTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai/wasm"
@@ -542,7 +553,8 @@ const AssistantTab = ({ isOnline, setIsOnline, messages, setMessages }: { isOnli
         
         const llmInference = await LlmInference.createFromOptions(genai, {
           baseOptions: {
-            modelAssetPath: "/models/gemma-2b-it-gpu-int4.bin"
+            // Accepts an absolute URL (GitHub Releases) or a relative path (local dev).
+            modelAssetPath: MODEL_URL,
           },
           maxTokens: 512,
           topK: 40,
@@ -552,8 +564,12 @@ const AssistantTab = ({ isOnline, setIsOnline, messages, setMessages }: { isOnli
         
         setEngine(llmInference);
       } catch (err: any) {
-        console.error("Local LLM error:", err);
-        setModelError("Model missing in /public/models/");
+        console.error('[EdgeAI] LLM load error:', err);
+        setModelError(
+          MODEL_IS_REMOTE
+            ? `Failed to fetch model from URL. Check VITE_MODEL_URL and CORS headers.`
+            : `Model not found. Add gemma-2b-it-gpu-int4.bin to public/models/ or set VITE_MODEL_URL.`
+        );
       } finally {
         setIsModelLoading(false);
       }
@@ -592,7 +608,14 @@ const AssistantTab = ({ isOnline, setIsOnline, messages, setMessages }: { isOnli
       }
     } else {
       if (!engine) {
-        setMessages((prev) => [...prev, { role: 'assistant', text: isModelLoading ? "Local model is currently downloading (approx 1.3GB). Please wait..." : "Error: /public/models/gemma-2b-it-gpu-int4.bin not found. Please download it from Kaggle." }]);
+        setMessages((prev) => [...prev, {
+          role: 'assistant',
+          text: isModelLoading
+            ? `Loading model weights (~1.3 GB) from ${MODEL_LABEL}. This may take a minute...`
+            : MODEL_IS_REMOTE
+              ? `Error: Could not load model from URL.\n\nSet VITE_MODEL_URL to a valid GitHub Releases download link pointing to gemma-2b-it-gpu-int4.bin.`
+              : `Error: Model not found.\n\nEither:\n1. Download gemma-2b-it-gpu-int4.bin and place it in public/models/, or\n2. Set the VITE_MODEL_URL env variable to a hosted URL (e.g. GitHub Releases).`,
+        }]);
       } else {
         try {
           const gemmaPrompt = `<start_of_turn>user\n${userMsg}<end_of_turn>\n<start_of_turn>model\n`;
@@ -620,9 +643,9 @@ const AssistantTab = ({ isOnline, setIsOnline, messages, setMessages }: { isOnli
           {isOnline ? (
             <><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> <span className="text-emerald-400">Cloud Engine Ready</span></>
           ) : isModelLoading ? (
-            <><span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" /> <span className="text-yellow-400">Loading Weights (1.3GB)...</span></>
+            <><span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" /> <span className="text-yellow-400">Fetching Weights (~1.3 GB)...</span></>
           ) : modelError ? (
-            <><span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400" /> <span className="text-red-400">Model Missing: Add to /public/models/</span></>
+            <><span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400" /> <span className="text-red-400" title={modelError}>Model Load Failed</span></>
           ) : engine ? (
             <><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> <span className="text-emerald-400">Local Engine Ready</span></>
           ) : (
