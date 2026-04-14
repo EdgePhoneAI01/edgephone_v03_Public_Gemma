@@ -4,7 +4,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FilesetResolver, LlmInference } from '@mediapipe/tasks-genai';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Shield,
@@ -44,15 +43,9 @@ import {
   Eye,
 } from 'lucide-react';
 
-// ─── Model URL ────────────────────────────────────────────────────────────────
-// Priority 1: VITE_MODEL_URL env var
-// Priority 2: Remote Kaggle URL fallback
-const MODEL_URL: string =
-  (import.meta as any).env?.VITE_MODEL_URL ||
-  'https://www.kaggle.com/models/google/gemma/tfLite/gemma-2b-it-gpu-int4';
-
-const MODEL_IS_REMOTE = MODEL_URL.startsWith('http');
-const MODEL_LABEL = MODEL_IS_REMOTE ? 'Remote Kaggle URL' : 'Local /public/models/';
+// ─── Runtime mode ─────────────────────────────────────────────────────────────
+// GitHub Pages deployment is cloud-only (Gemini API).
+const FORCE_ONLINE_MODE = true;
 
 // ─── Reusable Components ────────────────────────────────────────────────────
 
@@ -248,12 +241,10 @@ const DashboardTab = ({
   npuUsage,
   privacyScore,
   isOnline,
-  setIsOnline,
 }: {
   npuUsage: number;
   privacyScore: number;
   isOnline: boolean;
-  setIsOnline: (v: boolean) => void;
 }) => (
   <div className="flex flex-col gap-5">
     {/* Hero AI Visualizer */}
@@ -325,12 +316,12 @@ const DashboardTab = ({
             <p className="text-xs font-bold text-edge-secondary">0.4ms</p>
           </div>
           <div className="w-px h-5 bg-white/10" />
-          <button onClick={() => setIsOnline(!isOnline)} className="text-right">
+          <div className="text-right">
             <p className="text-[9px] text-white/30 font-mono uppercase">Mode</p>
             <p className={`text-xs font-bold ${isOnline ? 'text-emerald-400' : 'text-white/60'}`}>
-              {isOnline ? 'ONLINE' : 'LOCAL'}
+              ONLINE
             </p>
-          </button>
+          </div>
         </div>
       </div>
     </div>
@@ -524,59 +515,16 @@ const NotificationsTab = () => (
 
 // ─── Assistant Tab ────────────────────────────────────────────────────────────
 
-const AssistantTab = ({ isOnline, setIsOnline, messages, setMessages }: { isOnline: boolean; setIsOnline: (v: boolean) => void; messages: any[]; setMessages: React.Dispatch<React.SetStateAction<any[]>> }) => {
+const AssistantTab = ({ isOnline, messages, setMessages }: { isOnline: boolean; messages: any[]; setMessages: React.Dispatch<React.SetStateAction<any[]>> }) => {
   const [inputValue, setInputValue] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
-
-  const [engine, setEngine] = useState<LlmInference | null>(null);
-  const [isModelLoading, setIsModelLoading] = useState(false);
-  const [modelError, setModelError] = useState('');
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isGenerating, isOnline, isModelLoading]);
-
-  useEffect(() => {
-    if (isOnline || engine || isModelLoading) return;
-
-    const initModel = async () => {
-      setIsModelLoading(true);
-      setModelError('');
-      console.log(`[EdgeAI] Loading model from: ${MODEL_URL} (${MODEL_LABEL})`);
-      try {
-        const genai = await FilesetResolver.forGenAiTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai/wasm"
-        );
-        
-        const llmInference = await LlmInference.createFromOptions(genai, {
-          baseOptions: {
-            // Accepts an absolute URL (GitHub Releases) or a relative path (local dev).
-            modelAssetPath: MODEL_URL,
-          },
-          maxTokens: 512,
-          topK: 40,
-          temperature: 0.8,
-          randomSeed: 101,
-        });
-        
-        setEngine(llmInference);
-      } catch (err: any) {
-        console.error('[EdgeAI] LLM load error:', err);
-        setModelError(
-          MODEL_IS_REMOTE
-            ? `Failed to fetch model from URL. Check VITE_MODEL_URL and CORS headers.`
-            : `Model not found. Add gemma-2b-it-gpu-int4.bin to public/models/ or set VITE_MODEL_URL.`
-        );
-      } finally {
-        setIsModelLoading(false);
-      }
-    };
-
-    initModel();
-  }, [isOnline, engine, isModelLoading]);
+  }, [messages, isGenerating, isOnline]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -587,44 +535,23 @@ const AssistantTab = ({ isOnline, setIsOnline, messages, setMessages }: { isOnli
     setMessages((prev) => [...prev, { role: 'user', text: userMsg }]);
     setIsGenerating(true);
 
-    if (isOnline) {
-      try {
-        const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
-        if (!apiKey) throw new Error("Missing API Key");
+    try {
+      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error("Missing API Key");
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: userMsg }] }]
-          })
-        });
-        const data = await res.json();
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
-        
-        setMessages((prev) => [...prev, { role: 'assistant', text: reply }]);
-      } catch (err) {
-        setMessages((prev) => [...prev, { role: 'assistant', text: "Error: Could not connect to Google Cloud." }]);
-      }
-    } else {
-      if (!engine) {
-        setMessages((prev) => [...prev, {
-          role: 'assistant',
-          text: isModelLoading
-            ? `Loading model weights (~1.3 GB) from ${MODEL_LABEL}. This may take a minute...`
-            : MODEL_IS_REMOTE
-              ? `Error: Could not load model from URL.\n\nSet VITE_MODEL_URL to a valid GitHub Releases download link pointing to gemma-2b-it-gpu-int4.bin.`
-              : `Error: Model not found.\n\nEither:\n1. Download gemma-2b-it-gpu-int4.bin and place it in public/models/, or\n2. Set the VITE_MODEL_URL env variable to a hosted URL (e.g. GitHub Releases).`,
-        }]);
-      } else {
-        try {
-          const gemmaPrompt = `<start_of_turn>user\n${userMsg}<end_of_turn>\n<start_of_turn>model\n`;
-          let reply = await engine.generateResponse(gemmaPrompt);
-          setMessages((prev) => [...prev, { role: 'assistant', text: reply }]);
-        } catch (err) {
-          setMessages((prev) => [...prev, { role: 'assistant', text: "Error: Local edge inference failed." }]);
-        }
-      }
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: userMsg }] }]
+        })
+      });
+      const data = await res.json();
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
+      
+      setMessages((prev) => [...prev, { role: 'assistant', text: reply }]);
+    } catch (err) {
+      setMessages((prev) => [...prev, { role: 'assistant', text: "Error: Could not connect to Google Cloud." }]);
     }
     
     setIsGenerating(false);
@@ -640,17 +567,7 @@ const AssistantTab = ({ isOnline, setIsOnline, messages, setMessages }: { isOnli
       <div className="flex-1">
         <p className="text-sm font-bold">Edge Assistant</p>
         <p className="text-[11px] font-mono flex items-center gap-1">
-          {isOnline ? (
-            <><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> <span className="text-emerald-400">Cloud Engine Ready</span></>
-          ) : isModelLoading ? (
-            <><span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" /> <span className="text-yellow-400">Fetching Weights (~1.3 GB)...</span></>
-          ) : modelError ? (
-            <><span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400" /> <span className="text-red-400" title={modelError}>Model Load Failed</span></>
-          ) : engine ? (
-            <><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> <span className="text-emerald-400">Local Engine Ready</span></>
-          ) : (
-            <><span className="inline-block w-1.5 h-1.5 rounded-full bg-white/40" /> <span className="text-white/40">Offline</span></>
-          )}
+          <><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> <span className="text-emerald-400">Cloud Engine Ready</span></>
         </p>
       </div>
       {isOnline ? <Globe size={14} className="text-emerald-400" /> : <Lock size={14} className="text-white/25" />}
@@ -704,25 +621,16 @@ const AssistantTab = ({ isOnline, setIsOnline, messages, setMessages }: { isOnli
             {isOnline ? 'Online' : 'Offline'}
           </span>
         </div>
-        {isOnline ? (
-          <div className="grid grid-cols-2 gap-2">
-            <a href="https://apple.com/app-store" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-2.5 bg-black/40 border border-white/10 rounded-xl active:scale-95 transition-all">
-              <Apple size={13} />
-              <span className="text-[10px] font-bold uppercase tracking-wide">App Store</span>
-            </a>
-            <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-2.5 bg-black/40 border border-white/10 rounded-xl active:scale-95 transition-all">
-              <Play size={13} />
-              <span className="text-[10px] font-bold uppercase tracking-wide">Play Store</span>
-            </a>
-          </div>
-        ) : (
-          <div className="text-center">
-            <p className="text-[11px] text-white/30 mb-3">Switch to Hybrid mode to browse app stores.</p>
-            <button onClick={() => setIsOnline(true)} className="px-5 py-2 bg-edge-primary/20 border border-edge-primary/30 rounded-xl text-[11px] font-bold uppercase tracking-widest active:scale-95 transition-all">
-              Go Online
-            </button>
-          </div>
-        )}
+        <div className="grid grid-cols-2 gap-2">
+          <a href="https://apple.com/app-store" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-2.5 bg-black/40 border border-white/10 rounded-xl active:scale-95 transition-all">
+            <Apple size={13} />
+            <span className="text-[10px] font-bold uppercase tracking-wide">App Store</span>
+          </a>
+          <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-2.5 bg-black/40 border border-white/10 rounded-xl active:scale-95 transition-all">
+            <Play size={13} />
+            <span className="text-[10px] font-bold uppercase tracking-wide">Play Store</span>
+          </a>
+        </div>
       </div>
     </div>
 
@@ -954,13 +862,13 @@ const Music = ({ size, className }: { size: number; className?: string }) => (
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [isOnline, setIsOnline] = useState(false);
+  const [isOnline] = useState(FORCE_ONLINE_MODE);
   const [npuUsage, setNpuUsage] = useState(27);
   const [privacyScore] = useState(98);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [currentTime, setCurrentTime] = useState('');
   const [messages, setMessages] = useState<{ role: 'user'|'assistant', text: string }[]>([
-    { role: 'assistant', text: "Hello! I'm your on-device AI assistant. All processing happens locally on the Neural Processing Unit — your data never leaves this device." }
+    { role: 'assistant', text: "Hello! I'm your cloud-connected AI assistant running from GitHub Pages. Ask me anything." }
   ]);
 
   useEffect(() => {
@@ -1058,13 +966,12 @@ export default function App() {
                     npuUsage={npuUsage}
                     privacyScore={privacyScore}
                     isOnline={isOnline}
-                    setIsOnline={setIsOnline}
                   />
                 )}
                 {activeTab === 'mobile' && <MobileTab />}
                 {activeTab === 'notifications' && <NotificationsTab />}
                 {activeTab === 'assistant' && (
-                  <AssistantTab isOnline={isOnline} setIsOnline={setIsOnline} messages={messages} setMessages={setMessages} />
+                  <AssistantTab isOnline={isOnline} messages={messages} setMessages={setMessages} />
                 )}
                 {activeTab === 'privacy' && <PrivacyTab />}
                 {activeTab === 'settings' && <SettingsTab />}

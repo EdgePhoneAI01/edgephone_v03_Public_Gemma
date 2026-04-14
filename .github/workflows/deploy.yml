@@ -40,18 +40,14 @@ jobs:
         run: npm ci
 
       # ── Build ──────────────────────────────────────────────────────────────
-      # VITE_MODEL_URL  → GitHub Releases direct-download URL for the model binary.
-      #                   Set this secret in: Settings → Secrets → Actions.
-      #                   Format: https://github.com/<user>/<repo>/releases/download/<tag>/gemma-2b-it-gpu-int4.bin
-      #
+      # Cloud-only mode on GitHub Pages (Gemini API).
       # VITE_BASE_URL   → Sub-path for GitHub Pages.
       #                   If site is at https://<user>.github.io/<repo>/ use  /<repo>/
       #                   For a custom domain or user-root site, use  /
       #
-      # VITE_GEMINI_API_KEY → Optional, for the online Gemini mode.
+      # VITE_GEMINI_API_KEY → Required for cloud inference mode.
       - name: Build
         env:
-          VITE_MODEL_URL: ${{ secrets.VITE_MODEL_URL }}
           VITE_BASE_URL: ${{ vars.VITE_BASE_URL || '/' }}
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
         run: npm run build
