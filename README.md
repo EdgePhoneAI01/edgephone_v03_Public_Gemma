@@ -114,13 +114,23 @@ Then open `.env` and set your Gemini API key (see [Environment Variables](#envir
 
 ### 4. (Optional) Add the local AI model
 
-To use the fully offline mode, download the Gemma 2B INT4 model binary from [Kaggle](https://www.kaggle.com/models/google/gemma/frameworks/tfLite) and place it at:
+To use the fully offline mode, download the **Gemma 2B IT GPU INT4** model binary from [Kaggle](https://www.kaggle.com/models/google/gemma/tfLite/gemma-2b-it-gpu-int4) and place it at:
 
 ```
 public/models/gemma-2b-it-gpu-int4.bin
 ```
 
-> **Note:** The model file is ~1.3 GB and is excluded from version control via `.gitignore`. Without it the app falls back gracefully and prompts you to add it.
+> **Why Gemma 2B IT GPU INT4?**
+> This is the confirmed-working variant for MediaPipe's `LlmInference` API in the browser. It offers several advantages for edge deployment:
+> - ✅ **Proven MediaPipe / LiteRT `.bin` compatibility** — loads directly via `@mediapipe/tasks-genai`
+> - ✅ **Small footprint (~1.3 GB)** — fits comfortably in browser GPU memory on most devices (2 GB+ VRAM)
+> - ✅ **Fully offline after first download** — zero cloud dependency, 100% on-device privacy
+> - ✅ **Fast WebGPU inference** — instruction-tuned and INT4 quantized for low-latency responses
+> - ✅ **Stable, mature model** — well-tested across Chrome 113+ and Edge 113+
+>
+> **Upgrade path:** This will be updated to **Gemma 4 E2B** once the TFLite / LiteRT `.bin` variant is officially published on Kaggle.
+> Google will announce availability via [ai.google.dev/edge](https://ai.google.dev/edge).
+> The model file is ~1.3 GB and is excluded from version control via `.gitignore`. Without it the app falls back gracefully and prompts you to add it.
 
 ---
 

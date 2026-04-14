@@ -173,7 +173,7 @@ const navItems = [
   { id: 'dashboard', icon: Activity, label: 'Home' },
   { id: 'mobile', icon: Smartphone, label: 'Apps' },
   { id: 'assistant', icon: null, label: '' }, // special AI button
-  { id: 'notifications', icon: Bell, label: 'Alerts' },
+  { id: 'privacy', icon: Shield, label: 'Privacy' },
   { id: 'settings', icon: Settings, label: 'System' },
 ];
 
@@ -542,7 +542,7 @@ const AssistantTab = ({ isOnline, setIsOnline, messages, setMessages }: { isOnli
         
         const llmInference = await LlmInference.createFromOptions(genai, {
           baseOptions: {
-            modelAssetPath: "/models/gemma-2b-it-gpu-int4.bin" 
+            modelAssetPath: "/models/gemma-2b-it-gpu-int4.bin"
           },
           maxTokens: 512,
           topK: 40,
