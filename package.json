@@ -16,7 +16,7 @@
     "@mediapipe/tasks-genai": "^0.10.26",
     "@mlc-ai/web-llm": "^0.2.82",
     "@tailwindcss/vite": "^4.1.14",
-    "@vitejs/plugin-react": "^5.0.4",
+    "@vitejs/plugin-react": "^6.0.1",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "lucide-react": "^0.546.0",
