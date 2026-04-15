@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { GoogleGenAI } from '@google/genai';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Shield,
@@ -43,9 +44,9 @@ import {
   Eye,
 } from 'lucide-react';
 
-// ─── Runtime mode ─────────────────────────────────────────────────────────────
-// GitHub Pages deployment is cloud-only (Gemini API).
-const FORCE_ONLINE_MODE = true;
+// ─── Runtime mode and cloud models ────────────────────────────────────────────
+const ONLINE_MODEL = ((import.meta as any).env?.VITE_ONLINE_MODEL || 'gemini-2.5-flash').trim();
+const OFFLINE_MODEL = ((import.meta as any).env?.VITE_OFFLINE_MODEL || 'gemma-4-31b-it').trim();
 
 // ─── Reusable Components ────────────────────────────────────────────────────
 
@@ -241,10 +242,12 @@ const DashboardTab = ({
   npuUsage,
   privacyScore,
   isOnline,
+  setIsOnline,
 }: {
   npuUsage: number;
   privacyScore: number;
   isOnline: boolean;
+  setIsOnline: (v: boolean) => void;
 }) => (
   <div className="flex flex-col gap-5">
     {/* Hero AI Visualizer */}
@@ -316,12 +319,12 @@ const DashboardTab = ({
             <p className="text-xs font-bold text-edge-secondary">0.4ms</p>
           </div>
           <div className="w-px h-5 bg-white/10" />
-          <div className="text-right">
+          <button onClick={() => setIsOnline(!isOnline)} className="text-right">
             <p className="text-[9px] text-white/30 font-mono uppercase">Mode</p>
             <p className={`text-xs font-bold ${isOnline ? 'text-emerald-400' : 'text-white/60'}`}>
-              ONLINE
+              {isOnline ? 'ONLINE' : 'OFFLINE'}
             </p>
-          </div>
+          </button>
         </div>
       </div>
     </div>
@@ -536,18 +539,18 @@ const AssistantTab = ({ isOnline, messages, setMessages }: { isOnline: boolean; 
     setIsGenerating(true);
 
     try {
-      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+      const apiKey = isOnline
+        ? (import.meta as any).env.VITE_GEMINI_API_KEY
+        : (import.meta as any).env.VITE_OFFLINE_GEMMA_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
       if (!apiKey) throw new Error("Missing API Key");
+      const modelName = isOnline ? ONLINE_MODEL : OFFLINE_MODEL;
 
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: userMsg }] }]
-        })
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: userMsg,
       });
-      const data = await res.json();
-      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
+      const reply = response.text || "No response received.";
       
       setMessages((prev) => [...prev, { role: 'assistant', text: reply }]);
     } catch (err) {
@@ -567,7 +570,11 @@ const AssistantTab = ({ isOnline, messages, setMessages }: { isOnline: boolean; 
       <div className="flex-1">
         <p className="text-sm font-bold">Edge Assistant</p>
         <p className="text-[11px] font-mono flex items-center gap-1">
-          <><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> <span className="text-emerald-400">Cloud Engine Ready</span></>
+          {isOnline ? (
+            <><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> <span className="text-emerald-400">Cloud Engine Ready</span></>
+          ) : (
+            <><span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" /> <span className="text-yellow-400">Gemma 4 API Mode</span></>
+          )}
         </p>
       </div>
       {isOnline ? <Globe size={14} className="text-emerald-400" /> : <Lock size={14} className="text-white/25" />}
@@ -862,7 +869,7 @@ const Music = ({ size, className }: { size: number; className?: string }) => (
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [isOnline] = useState(FORCE_ONLINE_MODE);
+  const [isOnline, setIsOnline] = useState(true);
   const [npuUsage, setNpuUsage] = useState(27);
   const [privacyScore] = useState(98);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -966,6 +973,7 @@ export default function App() {
                     npuUsage={npuUsage}
                     privacyScore={privacyScore}
                     isOnline={isOnline}
+                    setIsOnline={setIsOnline}
                   />
                 )}
                 {activeTab === 'mobile' && <MobileTab />}
