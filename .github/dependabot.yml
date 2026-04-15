@@ -1,0 +1,52 @@
+version: 2
+
+updates:
+  # ── GitHub Actions ────────────────────────────────────────────────────────
+  # Keeps all action versions (e.g. actions/checkout, github/codeql-action)
+  # pinned to non-vulnerable releases.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  # ── npm (dependencies + devDependencies) ─────────────────────────────────
+  # Covers the React/TypeScript front-end and all build tooling declared in
+  # package.json (vite, tailwind, typescript, puppeteer, etc.).
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:30"
+      timezone: "UTC"
+    # Open individual PRs per package so reviews are focused and bisectable.
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "deps"
+    labels:
+      - "dependencies"
+      - "npm"
+    # Group all minor/patch updates into a single PR to reduce noise.
+    groups:
+      npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # Avoid automatic major-version bumps for core runtime packages that
+      # may require manual migration work. Remove a line once you are ready
+      # to evaluate a specific major update.
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]

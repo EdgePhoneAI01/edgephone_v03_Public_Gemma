@@ -1,0 +1,56 @@
+name: "CodeQL Security Analysis"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    # Runs on PRs targeting main, including those from external forks.
+    # Using `pull_request` (not `pull_request_target`) is intentional and
+    # critical for security: the workflow runs in the context of the fork's
+    # commit, WITHOUT access to repository secrets. This prevents untrusted
+    # code from exfiltrating secrets such as VITE_GEMINI_API_KEY.
+    branches: [main]
+  schedule:
+    # Run a full scan every Monday at 06:00 UTC to catch newly published CVEs
+    # even when there is no push activity.
+    - cron: "0 6 * * 1"
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+
+    # Minimal permissions required by CodeQL – never grant more than needed.
+    permissions:
+      security-events: write  # Upload SARIF results to the Security tab
+      actions: read           # Required for private repos; harmless on public
+      contents: read          # Checkout the repository
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language:
+          - javascript-typescript  # Covers both .js/.jsx and .ts/.tsx source files
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # Use the security-extended query suite for broader vulnerability
+          # coverage beyond the default suite (adds ~100 additional queries).
+          queries: security-extended
+
+      # CodeQL auto-builds compiled languages. For JavaScript/TypeScript the
+      # autobuild step is a no-op, but it is kept here so the workflow remains
+      # correct if a compiled language is added to the matrix in the future.
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
