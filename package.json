@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
-    "@huggingface/transformers": "^3.8.1",
+    "@huggingface/transformers": "^4.0.1",
     "@mediapipe/tasks-genai": "^0.10.26",
     "@mlc-ai/web-llm": "^0.2.82",
     "@tailwindcss/vite": "^4.1.14",
