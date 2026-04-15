@@ -41,15 +41,22 @@ jobs:
 
       # ── Build ──────────────────────────────────────────────────────────────
       # Cloud-only mode on GitHub Pages (Gemini API).
-      # VITE_BASE_URL   → Sub-path for GitHub Pages.
-      #                   If site is at https://<user>.github.io/<repo>/ use  /<repo>/
-      #                   For a custom domain or user-root site, use  /
+      # VITE_BASE_URL              → Sub-path for GitHub Pages.
+      #                              If site is at https://<user>.github.io/<repo>/ use  /<repo>/
+      #                              For a custom domain or user-root site, use  /
       #
-      # VITE_GEMINI_API_KEY → Required for cloud inference mode.
+      # VITE_GEMINI_API_KEY        → (secret) Required for online cloud inference mode.
+      # VITE_OFFLINE_GEMMA_API_KEY → (secret) Optional dedicated key for offline toggle mode.
+      #                              If omitted, the app falls back to VITE_GEMINI_API_KEY.
+      # VITE_ONLINE_MODEL          → (var) Model for online mode (default: gemini-2.5-flash).
+      # VITE_OFFLINE_MODEL         → (var) Model for offline toggle mode (default: gemma-4-31b-it).
       - name: Build
         env:
           VITE_BASE_URL: ${{ vars.VITE_BASE_URL || '/' }}
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
+          VITE_OFFLINE_GEMMA_API_KEY: ${{ secrets.VITE_OFFLINE_GEMMA_API_KEY }}
+          VITE_ONLINE_MODEL: ${{ vars.VITE_ONLINE_MODEL }}
+          VITE_OFFLINE_MODEL: ${{ vars.VITE_OFFLINE_MODEL }}
         run: npm run build
 
       # ── GitHub Pages upload ────────────────────────────────────────────────
