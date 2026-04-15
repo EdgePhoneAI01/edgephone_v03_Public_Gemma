@@ -165,6 +165,16 @@ Create a `.env` file in the project root (or copy `.env.example`):
 # Required for cloud AI mode
 VITE_GEMINI_API_KEY="your_gemini_api_key"
 
+# Optional dedicated key for offline toggle mode.
+# If blank, the app falls back to VITE_GEMINI_API_KEY.
+VITE_OFFLINE_GEMMA_API_KEY=""
+
+# Model used while online toggle is enabled (default: gemini-2.5-flash)
+VITE_ONLINE_MODEL="gemini-2.5-flash"
+
+# Model used while offline toggle is enabled (default: gemma-4-31b-it)
+VITE_OFFLINE_MODEL="gemma-4-31b-it"
+
 # Base sub-path for GitHub Pages.
 # For https://<user>.github.io/<repo>/ use /<repo>/
 # For custom domain or root deployment use /
@@ -173,7 +183,10 @@ VITE_BASE_URL="/"
 
 | Variable | Required | Description |
 |---|---|---|
-| `VITE_GEMINI_API_KEY` | Yes | Gemini API key used by the assistant |
+| `VITE_GEMINI_API_KEY` | Yes | Gemini API key for online cloud mode |
+| `VITE_OFFLINE_GEMMA_API_KEY` | No | Dedicated API key for offline toggle mode; falls back to `VITE_GEMINI_API_KEY` |
+| `VITE_ONLINE_MODEL` | No | Model name for online mode (default: `gemini-2.5-flash`) |
+| `VITE_OFFLINE_MODEL` | No | Model name for offline toggle mode (default: `gemma-4-31b-it`) |
 | `VITE_BASE_URL` | Yes for Pages | Base path, e.g. `/edgephone_v03_Public_Gemma/` |
 
 > **Security:** Never commit your `.env` file. It is already listed in `.gitignore`.
@@ -200,10 +213,13 @@ Visit **[http://localhost:8080](http://localhost:8080)**.
 This repository includes `.github/workflows/deploy.yml` that automatically deploys to GitHub Pages on pushes to `main`.
 
 1. In GitHub repo settings, enable **Pages** with **GitHub Actions** as the source.
-2. Add Actions secret `VITE_GEMINI_API_KEY`.
-3. Add repository variable `VITE_BASE_URL`:
-   - `/<repo>/` for project pages
-   - `/` for root/custom domain
+2. Add Actions secrets (Settings → Secrets and variables → Actions):
+   - `VITE_GEMINI_API_KEY` — your Gemini API key (required)
+   - `VITE_OFFLINE_GEMMA_API_KEY` — dedicated key for offline toggle mode (optional)
+3. Add repository variables (Settings → Secrets and variables → Actions → Variables):
+   - `VITE_BASE_URL`: `/<repo>/` for project pages, `/` for root/custom domain
+   - `VITE_ONLINE_MODEL`: model for online mode (optional, default: `gemini-2.5-flash`)
+   - `VITE_OFFLINE_MODEL`: model for offline toggle mode (optional, default: `gemma-4-31b-it`)
 4. Push to `main` (or run the workflow manually via **Actions**).
 
 ---
