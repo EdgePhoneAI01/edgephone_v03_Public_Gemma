@@ -755,6 +755,8 @@ const PrivacyTab = () => (
 
 // ─── Settings Tab ─────────────────────────────────────────────────────────────
 
+const SAVE_CONFIRMATION_DURATION_MS = 2000;
+
 const SettingsTab = () => {
   const [wifi, setWifi] = useState(true);
   const [bt, setBt] = useState(true);
@@ -765,16 +767,22 @@ const SettingsTab = () => {
   const [apiKeyInput, setApiKeyInput] = useState(() => localStorage.getItem(LS_API_KEY) || '');
   const [showKey, setShowKey] = useState(false);
   const [keySaved, setKeySaved] = useState(false);
+  const [keyError, setKeyError] = useState('');
 
   const saveApiKey = () => {
     const trimmed = apiKeyInput.trim();
+    if (trimmed && trimmed.length < 20) {
+      setKeyError('Key looks too short — please check and try again.');
+      return;
+    }
+    setKeyError('');
     if (trimmed) {
       localStorage.setItem(LS_API_KEY, trimmed);
     } else {
       localStorage.removeItem(LS_API_KEY);
     }
     setKeySaved(true);
-    setTimeout(() => setKeySaved(false), 2000);
+    setTimeout(() => setKeySaved(false), SAVE_CONFIRMATION_DURATION_MS);
   };
 
   return (
@@ -872,6 +880,9 @@ const SettingsTab = () => {
               {keySaved ? 'Saved ✓' : 'Save'}
             </button>
           </div>
+          {keyError && (
+            <p className="text-[10px] text-red-400 mt-1.5 font-mono">{keyError}</p>
+          )}
         </div>
       </SettingsGroup>
 
