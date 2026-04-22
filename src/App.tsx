@@ -42,11 +42,17 @@ import {
   UserCheck,
   MapPin,
   Eye,
+  EyeOff,
+  Key,
 } from 'lucide-react';
 
 // ─── Runtime mode and cloud models ────────────────────────────────────────────
 const ONLINE_MODEL = ((import.meta as any).env?.VITE_ONLINE_MODEL || 'gemini-2.5-flash').trim();
 const OFFLINE_MODEL = ((import.meta as any).env?.VITE_OFFLINE_MODEL || 'gemma-4-31b-it').trim();
+
+// ─── localStorage key for user-supplied Gemini API key ────────────────────────
+// Storing the key at runtime keeps it out of the compiled bundle.
+const LS_API_KEY = 'edgephone_gemini_api_key';
 
 // ─── Reusable Components ────────────────────────────────────────────────────
 
@@ -539,9 +545,10 @@ const AssistantTab = ({ isOnline, messages, setMessages }: { isOnline: boolean; 
     setIsGenerating(true);
 
     try {
+      const storedKey = localStorage.getItem(LS_API_KEY);
       const apiKey = isOnline
-        ? (import.meta as any).env.VITE_GEMINI_API_KEY
-        : (import.meta as any).env.VITE_OFFLINE_GEMMA_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
+        ? storedKey || (import.meta as any).env.VITE_GEMINI_API_KEY
+        : storedKey || (import.meta as any).env.VITE_OFFLINE_GEMMA_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
       if (!apiKey) throw new Error("Missing API Key");
       const modelName = isOnline ? ONLINE_MODEL : OFFLINE_MODEL;
 
@@ -755,6 +762,20 @@ const SettingsTab = () => {
   const [faceId, setFaceId] = useState(true);
   const [fastCharge, setFastCharge] = useState(true);
   const [photoSync, setPhotoSync] = useState(true);
+  const [apiKeyInput, setApiKeyInput] = useState(() => localStorage.getItem(LS_API_KEY) || '');
+  const [showKey, setShowKey] = useState(false);
+  const [keySaved, setKeySaved] = useState(false);
+
+  const saveApiKey = () => {
+    const trimmed = apiKeyInput.trim();
+    if (trimmed) {
+      localStorage.setItem(LS_API_KEY, trimmed);
+    } else {
+      localStorage.removeItem(LS_API_KEY);
+    }
+    setKeySaved(true);
+    setTimeout(() => setKeySaved(false), 2000);
+  };
 
   return (
     <div className="flex flex-col gap-1 pb-4">
@@ -812,6 +833,46 @@ const SettingsTab = () => {
           control={<Toggle active={photoSync} onToggle={() => setPhotoSync(!photoSync)} />} />
         <SettingsRow label="App Data Backup" sub="Daily at 3:00 AM" icon={User} iconColor="#ffffff60"
           control={<ChevronRight size={16} className="text-white/20" />} />
+      </SettingsGroup>
+
+      <SettingsGroup title="AI Configuration">
+        <div className="py-3">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#6A00F422' }}>
+              <Key size={16} style={{ color: '#6A00F4' }} />
+            </div>
+            <div>
+              <p className="text-sm font-medium">Gemini API Key</p>
+              <p className="text-[11px] text-white/35">Stored locally · never sent to any server</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <input
+                type={showKey ? 'text' : 'password'}
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && saveApiKey()}
+                placeholder="Enter API key…"
+                className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white/70 placeholder-white/20 focus:outline-none focus:border-white/20 pr-8"
+              />
+              <button
+                type="button"
+                onClick={() => setShowKey(!showKey)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+              >
+                {showKey ? <EyeOff size={13} /> : <Eye size={13} />}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={saveApiKey}
+              className="px-3 py-2 bg-edge-primary/20 border border-edge-primary/30 rounded-xl text-[11px] font-bold text-edge-primary hover:bg-edge-primary/30 transition-colors"
+            >
+              {keySaved ? 'Saved ✓' : 'Save'}
+            </button>
+          </div>
+        </div>
       </SettingsGroup>
 
       {/* Neural Diagnostics */}
