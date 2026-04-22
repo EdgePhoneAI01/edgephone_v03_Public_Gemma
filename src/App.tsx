@@ -53,6 +53,7 @@ const OFFLINE_MODEL = ((import.meta as any).env?.VITE_OFFLINE_MODEL || 'gemma-4-
 // ─── localStorage key for user-supplied Gemini API key ────────────────────────
 // Storing the key at runtime keeps it out of the compiled bundle.
 const LS_API_KEY = 'edgephone_gemini_api_key';
+const MIN_API_KEY_LENGTH = 20;
 
 // ─── Reusable Components ────────────────────────────────────────────────────
 
@@ -771,7 +772,7 @@ const SettingsTab = () => {
 
   const saveApiKey = () => {
     const trimmed = apiKeyInput.trim();
-    if (trimmed && trimmed.length < 20) {
+    if (trimmed && trimmed.length < MIN_API_KEY_LENGTH) {
       setKeyError('Key looks too short — please check and try again.');
       return;
     }
